@@ -2,7 +2,7 @@
 
 <script type="text/javascript">
     if (Parse.User.current()) {
-        window.location.href='/fp.html'; //the location of the landing page of your app
+        window.location.href='/main.html'; //the location of the landing page of your app
     }
 
     function onLinkedInLoad() {
@@ -26,7 +26,7 @@
 
                 document.getElementById('statusDiv').innerHTML = "Logged In. Loading App"
                 Parse.User.become(sessionToken).then(function (user) {
-                            window.location.href='/fp.html'; //landing page of your app
+                            window.location.href='/main.html'; //landing page of your app
                         },
                         function (error) {window.location.href='/';});
             },
