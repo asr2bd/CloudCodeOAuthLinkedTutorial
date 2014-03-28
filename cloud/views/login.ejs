@@ -1,8 +1,51 @@
 <% include head %>
-<p><a href="/authorize">Login with GitHub</a></p>
+
 <script type="text/javascript">
-if (Parse.User.current()) {
-	window.location.href='/main';
-}
+    if (Parse.User.current()) {
+        window.location.href='/fp.html'; //the location of the landing page of your app
+    }
+
+    function onLinkedInLoad() {
+        IN.Event.on(IN, "auth", onLinkedInAuth);
+    }
+
+    function onLinkedInAuth() {
+        document.getElementById('statusDiv').innerHTML = "Requesting User Data";
+
+        IN.API.Profile("me")
+                .fields(["id","firstName","lastName","emailAddress","pictureUrl"])
+                .result(loadMember);
+    }
+
+    function loadMember(profiles) {
+
+        document.getElementById('statusDiv').innerHTML = "Linking user to App";
+
+        Parse.Cloud.run('loadLinkedInMember',profiles, {
+            success: function(sessionToken){
+
+                document.getElementById('statusDiv').innerHTML = "Logged In. Loading App"
+                Parse.User.become(sessionToken).then(function (user) {
+                            window.location.href='/fp.html'; //landing page of your app
+                        },
+                        function (error) {window.location.href='/';});
+            },
+            error: function () {}
+        });
+    }
 </script>
+
+<script type="text/javascript" src="https://platform.linkedin.com/in.js">
+    api_key: XXX
+    onLoad: onLinkedInLoad
+</script>
+
+<div class="container">
+    
+        <p class="instr">Click on the LinkedIn button below to sign in with your LinkedIn account.</p>
+        <div align="center"><script type="in/Login"></script></div>
+
+        <div id="statusDiv" class="stat"></div>
+</div><!-- /.container -->
+
 <% include foot %>
