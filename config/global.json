@@ -1,0 +1,15 @@
+{
+    "applications": {
+        "ClarkOAuth": {
+            "applicationId": "sR6Y1S2TLIYuo4VBK0IscbmplZsemu9PXiGq8V7E", 
+            "masterKey": "NmfziOKVesc52lioXdnSY2S0gdZM7kqJTFuBGMMf"
+        },
+
+        "_default": {
+            "link": "ClarkOAuth"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.2.18"
+    }
+}
