@@ -36,6 +36,10 @@ app.get('/', function (req, res) {
     res.render('login', {});
 });
 
+app.get('/googlelogin',function (req,res){
+    res.redirect('https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/drive.file&response_type=token&redirect_uri=https://clarkoauth.parseapp.com/&client_id=450953848085.apps.googleusercontent.com');
+})
+
 /**
  * Logged in route.
  *

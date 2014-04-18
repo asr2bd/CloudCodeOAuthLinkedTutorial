@@ -1,5 +1,7 @@
 <% include head %>
 
+
+
 <script type="text/javascript">
     if (Parse.User.current()) {
         window.location.href='/main.html'; //the location of the landing page of your app
@@ -35,10 +37,6 @@
     }
 </script>
 
-<script type="text/javascript" src="https://platform.linkedin.com/in.js">
-    api_key: XXX
-    onLoad: onLinkedInLoad
-</script>
 
 <div class="container">
     
@@ -50,7 +48,7 @@
         <br />
 
         <button id="authorize-button" style="visibility: hidden">Authorize</button>
-    <script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
+
     <script type="text/javascript">
       // Enter a client ID for a web application from the Google Developer Console.
       // The provided clientId will only work if the sample is run directly from
@@ -58,6 +56,7 @@
       // In your Developer Console project, add a JavaScript origin that corresponds to the domain
       // where you will be running the script.
       var clientId = '450953848085-gii260jp4u9ev156ishmj0munmov893l.apps.googleusercontent.com';
+      //-gii260jp4u9ev156ishmj0munmov893l
 
       // Enter the API key from the Google Develoepr Console - to handle any unauthenticated
       // requests in the code.
@@ -71,16 +70,20 @@
 
       // Use a button to handle authentication the first time.
       function handleClientLoad() {
+        console.log('handle client load');
         gapi.client.setApiKey(apiKey);
         window.setTimeout(checkAuth,1);
+        
       }
 
       function checkAuth() {
+        console.log('check auth');
         gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: true}, handleAuthResult);
       }
 
 
       function handleAuthResult(authResult) {
+        console.log('handle auth result');
         var authorizeButton = document.getElementById('authorize-button');
         if (authResult && !authResult.error) {
           authorizeButton.style.visibility = 'hidden';
@@ -92,6 +95,7 @@
       }
 
       function handleAuthClick(event) {
+        console.log('handle auth click');
         gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, handleAuthResult);
         return false;
       }
@@ -99,7 +103,7 @@
       // Load the API and make an API call.  Display the results on the screen.
       function makeApiCall() {
         console.log('making api call');
-        gapi.client.load('plus', 'v1', function() {
+        gapi.client.load('drive', 'v2', function() {
           var request = gapi.client.plus.people.get({
             'userId': 'me'
           });
@@ -115,7 +119,16 @@
           });
         });
       }
+          $(document).ready(function() {
+          $('#authorize-button').on('click', handleAuthClick);
+          $.getScript('/scripts/api.js', function() {
+            gapi.load('auth:client', handleClientLoad);
+          });
+        });
+
+      // window.setTimeout(handleClientLoad,500);
     </script>
+    
     
     <div id="content"></div>
     <p>Retrieves your profile name using the Google Plus API.</p>
