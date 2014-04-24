@@ -72,19 +72,18 @@ app.get("/login", function(req, res) {
      * This uses the objectId of the new TokenRequest as the 'state'
      *   variable in the GitHub redirect.
      */
-        var params = {
-            response_type: "code",
-            client_id: CLIENT_ID,
-            redirect_uri: callbackURL,
-            state: obj.id,
-            scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive"
-        };
+    var params = {
+        response_type: "code",
+        client_id: CLIENT_ID,
+        redirect_uri: callbackURL,
+        state: obj.id,
+        scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive"
+    };
         
-        params = qs.stringify(params);
-        res.writeHead(200, {'Content-Type': 'text/plain'});
-        res.redirect("https://accounts.google.com/o/oauth2/auth?" + params);
-    );
-    
+    params = qs.stringify(params);
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    res.redirect("https://accounts.google.com/o/oauth2/auth?" + params);
+        
     }, function(error) {
     // If there's an error storing the request, render the error page.
     res.render('error', { errorMessage: 'Failed to save auth request.'});
