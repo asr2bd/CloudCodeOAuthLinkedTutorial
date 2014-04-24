@@ -11,15 +11,12 @@ var Buffer = require('buffer').Buffer;
  */
 var app = express();
 
-
 /**
  * Global app configuration section
  */
 app.set('views', 'cloud/views');  // Specify the folder to find templates
 app.set('view engine', 'ejs');    // Set the template engine
 app.use(express.bodyParser());    // Middleware for reading request body
-
-
 
 // Define API credentials callback URL
 var callbackURL = "https://clarkoauth.parseapp.com/callback";
@@ -30,7 +27,6 @@ var state = '';
 var access_token = '';
 var token_type = '';
 var expires = '';
-
 
 /**
  * In the Data Browser, set the Class Permissions for these 2 classes to
@@ -53,42 +49,26 @@ restrictedAcl.setPublicWriteAccess(false);
 // Start the OAuth flow by generating a URL that the client (index.html) opens 
 // as a popup. The URL takes the user to Google's site for authentication
 app.get("/login", function(req, res) {
-  
-
-    // Generate a unique number that will be used to check if any hijacking
-    // was performed during the OAuth flow
-    state = Math.floor(Math.random() * 1e18);
-
+    
     var tokenRequest = new TokenRequest();
-    // Secure the object against public access.
     tokenRequest.setACL(restrictedAcl);
-    /**
-    * Save this request in a Parse Object for validation when GitHub responds
-    * Use the master key because this class is protected
-    */
     tokenRequest.save(null, { useMasterKey: true }).then(function(obj) {
-    /**
-     * Redirect the browser to GitHub for authorization.
-     * This uses the objectId of the new TokenRequest as the 'state'
-     *   variable in the GitHub redirect.
-     */
-    var params = {
-        response_type: "code",
-        client_id: CLIENT_ID,
-        redirect_uri: callbackURL,
-        state: obj.id,
-        scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive"
-    };
-        
-    params = qs.stringify(params);
-    res.writeHead(200, {'Content-Type': 'text/plain'});
-    res.redirect("https://accounts.google.com/o/oauth2/auth?" + params);
+        var params = {
+            response_type: "code",
+            client_id: CLIENT_ID,
+            redirect_uri: callbackURL,
+            state: obj.id,
+            scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive"
+        };
+            
+        params = qs.stringify(params);
+        res.writeHead(200, {'Content-Type': 'text/plain'});
+        res.redirect("https://accounts.google.com/o/oauth2/auth?" + params);
 
     }, function(error) {
-    // If there's an error storing the request, render the error page.
-    res.render('error', { errorMessage: 'Failed to save auth request.'});
+        // If there's an error storing the request, render the error page.
+        res.render('error', { errorMessage: 'Failed to save auth request.'});
     });
-
 });
 
 // The route that Google will redirect the popup to once the user has authed.
@@ -96,12 +76,10 @@ app.get("/login", function(req, res) {
 app.get("/callback", function(req, res) {
   
     // Collect the data contained in the querystring
-    var data = req.query; 
-    var code = req.query.code
-      , cb_state = req.query.state
-      , error = req.query.error;
+    var data = req.query;
+    var error = req.query.error;
   
-    // Verify the 'state' variable generated during '/login' equals what was passed back
+    // Verify the 'state' variable generated during '/login' was passed back
     if (!(data && data.code && data.state)) {
         res.send('Invalid auth response received.');
         return;
@@ -115,31 +93,22 @@ app.get("/callback", function(req, res) {
     Parse.Cloud.useMasterKey();
 
     Parse.Promise.as().then(function() {
-    return query.get(data.state);
+        return query.get(data.state);
     }).then(function(obj) {
-    // Destroy the TokenRequest before continuing.
-    return obj.destroy();
+        // Destroy the TokenRequest before continuing.
+        return obj.destroy();
     }).then(function() {
-    // Validate & Exchange the code parameter for an access token from GitHub
-    return getGoogleAccessToken(data.code);
+        // Validate & Exchange the code parameter for an access token from GitHub
+        return getGoogleAccessToken(data.code);
     }).then(function(access) {
-
         console.log("***got access token*****");
         console.log(access.data); 
-
     }, function(error) {
-    /**
-     * If the error is an object error (e.g. from a Parse function) convert it
-     *   to a string for display to the user.
-     */
-    if (error && error.code && error.error) {
-      error = error.code + ' ' + error.error;
-    }
-    res.send(JSON.stringify(error));
-    
+        if (error && error.code && error.error) {
+          error = error.code + ' ' + error.error;
+        }
+        res.send(JSON.stringify(error));
     });
-
-
 });
 
 // Test out the access_token by making an API call
@@ -178,50 +147,23 @@ app.listen();
 
 
 var getGoogleAccessToken = function(code) {
-  var body = qs.stringify({
+    var body = qs.stringify({
         code: code,
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
         redirect_uri: callbackURL,
         grant_type: "authorization_code"
-  });
-  var url = "https://accounts.google.com/o/oauth2/token";
+    });
+    var url = "https://accounts.google.com/o/oauth2/token";
 
-  return Parse.Cloud.httpRequest({
-            method: 'POST',
-            headers: {
-                'Host': 'accounts.google.com',
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: body,
-            url: url
-        });
-
-            // success: function(httpResponse) {
-            //     var results = JSON.parse(httpResponse);
-            //     console.log(httpResponse.text);
-            //     if (results.error) { 
-                
-            //         return console.error("Error returned from Google: ", results.error);
-
-            //     }
-
-            //     else {
-
-            //         access_token = results.access_token;
-            //         token_type = results.token_type;
-            //         expires = results.expires_in;
-            //         return console.log("Connected to Google");
-
-
-            //     }
-
-
-            // },
-            // error: function(httpResponse) {
-            //     console.error("Error returned from Google: ", httpResponse.error);
-            //         }
-            // }); 
-
+    return Parse.Cloud.httpRequest({
+        method: 'POST',
+        headers: {
+            'Host': 'accounts.google.com',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body,
+        url: url
+    });
 }
 
