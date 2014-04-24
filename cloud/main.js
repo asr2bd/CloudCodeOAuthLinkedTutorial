@@ -156,15 +156,6 @@ var getGoogleAccessToken = function(code) {
         grant_type: "authorization_code"
   });
   return Parse.Cloud.httpRequest({
-    method: 'POST',
-    url: githubValidateEndpoint,
-    headers: {
-      'Accept': 'application/json',
-      'User-Agent': 'Parse.com Cloud Code'
-    },
-    body: body
-  });
-  return Parse.Cloud.httpRequest({
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
