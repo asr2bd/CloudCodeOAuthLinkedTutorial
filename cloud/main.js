@@ -178,7 +178,7 @@ app.listen();
 
 
 var getGoogleAccessToken = function(code) {
-  var body = querystring.stringify({
+  var body = qs.stringify({
         code: code,
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
