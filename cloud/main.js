@@ -185,6 +185,8 @@ var getGoogleAccessToken = function(code) {
         redirect_uri: callbackURL,
         grant_type: "authorization_code"
   });
+  var url = "https://accounts.google.com/o/oauth2/token";
+
   return Parse.Cloud.httpRequest({
             method: 'POST',
             headers: {
