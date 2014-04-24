@@ -31,6 +31,25 @@ var access_token = '';
 var token_type = '';
 var expires = '';
 
+
+/**
+ * In the Data Browser, set the Class Permissions for these 2 classes to
+ *   disallow public access for Get/Find/Create/Update/Delete operations.
+ * Only the master key should be able to query or write to these classes.
+ */
+var TokenRequest = Parse.Object.extend("TokenRequest");
+var TokenStorage = Parse.Object.extend("TokenStorage");
+
+/**
+ * Create a Parse ACL which prohibits public access.  This will be used
+ *   in several places throughout the application, to explicitly protect
+ *   Parse User, TokenRequest, and TokenStorage objects.
+ */
+var restrictedAcl = new Parse.ACL();
+restrictedAcl.setPublicReadAccess(false);
+restrictedAcl.setPublicWriteAccess(false);
+
+
 // Start the OAuth flow by generating a URL that the client (index.html) opens 
 // as a popup. The URL takes the user to Google's site for authentication
 app.get("/login", function(req, res) {
@@ -39,20 +58,38 @@ app.get("/login", function(req, res) {
     // Generate a unique number that will be used to check if any hijacking
     // was performed during the OAuth flow
     state = Math.floor(Math.random() * 1e18);
+
+    var tokenRequest = new TokenRequest();
+    // Secure the object against public access.
+    tokenRequest.setACL(restrictedAcl);
+    /**
+    * Save this request in a Parse Object for validation when GitHub responds
+    * Use the master key because this class is protected
+    */
+    tokenRequest.save(null, { useMasterKey: true }).then(function(obj) {
+    /**
+     * Redirect the browser to GitHub for authorization.
+     * This uses the objectId of the new TokenRequest as the 'state'
+     *   variable in the GitHub redirect.
+     */
+        var params = {
+            response_type: "code",
+            client_id: CLIENT_ID,
+            redirect_uri: callbackURL,
+            state: obj.id,
+            scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive"
+        };
+        
+        params = qs.stringify(params);
+        res.writeHead(200, {'Content-Type': 'text/plain'});
+        res.redirect("https://accounts.google.com/o/oauth2/auth?" + params);
+    );
     
-    console.log("****initial state setting******"); 
-    console.log(state); 
-    var params = {
-        response_type: "code",
-        client_id: CLIENT_ID,
-        redirect_uri: callbackURL,
-        state: state,
-        scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive"
-    };
-    
-    params = qs.stringify(params);
-    res.writeHead(200, {'Content-Type': 'text/plain'});
-    res.redirect("https://accounts.google.com/o/oauth2/auth?" + params);
+    }, function(error) {
+    // If there's an error storing the request, render the error page.
+    res.render('error', { errorMessage: 'Failed to save auth request.'});
+    });
+
 });
 
 // The route that Google will redirect the popup to once the user has authed.
