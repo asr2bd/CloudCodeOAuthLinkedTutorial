@@ -22,7 +22,7 @@ app.use(express.bodyParser());    // Middleware for reading request body
 
 
 // Define API credentials callback URL
-var callbackURL = "http://clarkoauth.parseapp.com/callback";
+var callbackURL = "https://clarkoauth.parseapp.com/callback";
 var CLIENT_ID = '450953848085-2muj2092fsqtllf2il1lj8uqmjq41j0c.apps.googleusercontent.com'
 var CLIENT_SECRET = 'OvPlHWuOerIiEvlLTkSX4zVm';
 
