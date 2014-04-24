@@ -2,6 +2,7 @@
  * Load needed modules.
  */
 var express = require('express');
+var qs = require('querystring');
 var _ = require('underscore');
 var Buffer = require('buffer').Buffer;
 
@@ -9,17 +10,7 @@ var Buffer = require('buffer').Buffer;
  * Create an express application instance
  */
 var app = express();
-var LinkedInLink = Parse.Object.extend("LinkedInLink");
 
-
-/**
- * Create a Parse ACL which prohibits public access.  This will be used
- *   in several places throughout the application, to explicitly protect
- *   Parse User and LinkedInLink objects.
- */
-var restrictedAcl = new Parse.ACL();
-restrictedAcl.setPublicReadAccess(false);
-restrictedAcl.setPublicWriteAccess(false);
 
 /**
  * Global app configuration section
@@ -28,109 +19,124 @@ app.set('views', 'cloud/views');  // Specify the folder to find templates
 app.set('view engine', 'ejs');    // Set the template engine
 app.use(express.bodyParser());    // Middleware for reading request body
 
-/**
- * Main route.
- * When called, render the login.ejs view
- */
-app.get('/', function (req, res) {
-    res.render('login', {});
+
+
+// Define API credentials callback URL
+var callbackURL = "http://" + "baseURL" + "/callback";
+var CLIENT_ID = 'GOOGLE_CLIENT_ID'
+var CLIENT_SECRET = 'GOOGLE_CLIENT_SECRET';
+
+var state = '';
+var access_token = '';
+var token_type = '';
+var expires = '';
+
+// Start the OAuth flow by generating a URL that the client (index.html) opens 
+// as a popup. The URL takes the user to Google's site for authentication
+app.get("/login", function(req, res) {
+  
+
+    // Generate a unique number that will be used to check if any hijacking
+    // was performed during the OAuth flow
+    state = Math.floor(Math.random() * 1e18);
+    
+    var params = {
+        response_type: "code",
+        client_id: CLIENT_ID,
+        redirect_uri: callbackURL,
+        state: state,
+        display: "popup",
+        scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email"
+    };
+    
+    params = qs.stringify(params);
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    res.end("https://accounts.google.com/o/oauth2/auth?" + params);
 });
 
-app.get('/googlelogin',function (req,res){
-    res.redirect('https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/drive.file&response_type=token&redirect_uri=https://clarkoauth.parseapp.com/&client_id=450953848085.apps.googleusercontent.com');
-})
-
-/**
- * Logged in route.
- *
- * JavaScript will validate login and call a Cloud function to get the users
- */
-app.get('/main', function (req, res) {
-    res.render('main', {});
-});
-
-/**
- * Attach the express app to Cloud Code to process the inbound request.
- */
-app.listen();
-
-Parse.Cloud.define('loadLinkedInMember', function (request, response) {
-    var member = request.params.values[0];
-    upsertLinkedInUser(member).then(function (user) {
-        return response.success(user.getSessionToken());
-    });
-});
-
-
-/**
- * This function checks to see if this LinkedIn user has logged in before.
- * It expects a class in your Parse App called 'LinkedInLink' which is a simple table that links Parse Users to linkeIn Ids
- * the LinkedInLink calss shoudl have two colums : 
- *      'user' : pointer to Parse User
- *      'linkInId' : string that holds the unique LinkedIn user ID
- * If the user is found return
- *   the users token.  If not found, return the newLinkedInUser promise.
- */
-function upsertLinkedInUser(member) {
-
-    var query = new Parse.Query(LinkedInLink);
-    query.equalTo('linkedInId', member.id);
-    query.ascending('createdAt');
-
-    // Check if this linkedInId has previously logged in, using the master key
-    return query.first({ useMasterKey: true }).then(function (tokenData) {
-        // If not, create a new user.
-        if (!tokenData) {
-            return newLinkedInUser(member);
+// The route that Google will redirect the popup to once the user has authed.
+// The data passed back will be used to retrieve the access_token
+app.get("/callback", function(req, res) {
+  
+    // Collect the data contained in the querystring
+    var code = req.query.code
+      , cb_state = req.query.state
+      , error = req.query.error;
+  
+    // Verify the 'state' variable generated during '/login' equals what was passed back
+    if (state == cb_state) {
+        if (code !== undefined) {
+          
+            // Setup params and URL used to call API to obtain an access_token
+            var params = {
+                code: code,
+                client_id: CLIENT_ID,
+                client_secret: CLIENT_SECRET,
+                redirect_uri: callbackURL,
+                grant_type: "authorization_code"
+            };
+            var url = "https://accounts.google.com/o/oauth2/token";
+            
+            // Send the API request
+            request.post(url, {form: params}, function(err, resp, body) {
+              
+                // Handle any errors that may occur
+                if (err) return console.error("Error occured: ", err);
+                var results = JSON.parse(body);
+                if (results.error) return console.error("Error returned from Google: ", results.error);
+                
+                // Retrieve and store access_token to session
+                access_token = results.access_token;
+                token_type = results.token_type;
+                expires = results.expires_in;
+                
+                console.log("Connected to Google");
+                
+                // Close the popup. This will trigger the client (index.html) to redirect
+                // to '/user' which will test out the access_token.
+                var output = '<html><head></head><body onload="window.close();">Close this window</body></html>';
+                res.writeHead(200, {'Content-Type': 'text/html'});
+                res.end(output);
+            });
+        } else {
+            console.log("Code is undefined: " + code);
+            console.log("Error: " + error);
         }
+    } else {
+        console.log('Mismatch with variable "state". Redirecting to /');
+        res.redirect("/");
+    }
+});
 
-        // If found, fetch the user.
-        var user = tokenData.get('user');
-        return user.fetch({ useMasterKey: true }).then(function (user) {
-            return tokenData.save(null, { useMasterKey: true });
-        }).then(function (obj) {
-                // Return the user object.
-                return Parse.Promise.as(user);
-            });
-    });
-}
+// Test out the access_token by making an API call
+app.get("/user", function(req, res) {
+  
+    // Check to see if user as an access_token first
+    if (access_token) {
+      
+        // URL endpoint and params needed to make the API call  
+        var url = "https://www.googleapis.com/oauth2/v1/userinfo";
+        var params = {
+            access_token: access_token
+        };
 
-/**
- * This function creates a Parse User with a random  password, and
- *   associates it with an object in the LinkedInLink class.
- * Once completed, this will return upsertLinkedInUser.  This is done to protect
- *   against a race condition:  In the rare event where 2 new users are created
- *   at the same time, only the first one will actually get used.
- */
-var newLinkedInUser = function (linkedInData) {
-
-    var user = new Parse.User();
-    
-    
-        // Generate a random  password.
-        var password = new Buffer(24);
-        _.times(24, function (i) {
-            password.set(i, _.random(0, 255));
+        // Send the request
+        request.get({url: url, qs: params}, function(err, resp, user) {
+            // Check for errors
+            if (err) return console.error("Error occured: ", err);
+            
+            // Send output as response
+            var output = "<h1>Your User Details</h1><pre>" + user + "</pre>";
+            res.writeHead(200, {'Content-Type': 'text/html'});
+            res.end(output);
         });
-        user.set("username", linkedInData.firstName + linkedInData.lastName);
-        user.set("password", password.toString('base64'));
-        user.set("email", linkedInData.emailAddress);
-        user.set("firstName",linkedInData.firstName);
-        user.set("lastName",linkedInData.lastName);
-        user.set("company",savedCompany);
-        user.setACL(restrictedAcl);
+    } else {
+        console.log("Couldn't verify user was authenticated. Redirecting to /");
+        res.redirect("/");
+    }
+});
 
-        // Sign up the new User
-        return user.signUp().then(function (user) {
-            // create a new LinkedInLink object to store the user+LinkedIn association.
-            var ts = new LinkedInLink();
-            ts.set('linkedInId', linkedInData.id);
-            ts.set('user', user);
-            ts.setACL(restrictedAcl);
-            // Use the master key because LinkedInLink objects should be protected.
-            return ts.save(null, { useMasterKey: true });
-        }).then(function (tokenStorage) {
-                return upsertLinkedInUser(linkedInData);
-            });
 
-}
+
+
+
