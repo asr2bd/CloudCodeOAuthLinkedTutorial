@@ -20,8 +20,8 @@ app.use(express.bodyParser());    // Middleware for reading request body
 
 // Define API credentials callback URL
 var callbackURL = "https://clarkoauth.parseapp.com/callback";
-var CLIENT_ID = '1024175819480-9qrjco6pflj35tk2ut634ce8fdsrskcm.apps.googleusercontent.com'
-var CLIENT_SECRET = 'ibHt6MbFo8LvtuGSrrKVHopt';
+var CLIENT_ID = '450953848085-2muj2092fsqtllf2il1lj8uqmjq41j0c.apps.googleusercontent.com'
+var CLIENT_SECRET = 'OvPlHWuOerIiEvlLTkSX4zVm';
 
 /**
  * In the Data Browser, set the Class Permissions for these 2 classes to
