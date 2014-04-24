@@ -22,9 +22,9 @@ app.use(express.bodyParser());    // Middleware for reading request body
 
 
 // Define API credentials callback URL
-var callbackURL = "http://" + "baseURL" + "/callback";
-var CLIENT_ID = 'GOOGLE_CLIENT_ID'
-var CLIENT_SECRET = 'GOOGLE_CLIENT_SECRET';
+var callbackURL = "http://clarkoauth.parseapp.com/callback";
+var CLIENT_ID = '450953848085-2muj2092fsqtllf2il1lj8uqmjq41j0c.apps.googleusercontent.com'
+var CLIENT_SECRET = 'OvPlHWuOerIiEvlLTkSX4zVm';
 
 var state = '';
 var access_token = '';
@@ -46,7 +46,7 @@ app.get("/login", function(req, res) {
         redirect_uri: callbackURL,
         state: state,
         display: "popup",
-        scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email"
+        scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive"
     };
     
     params = qs.stringify(params);
