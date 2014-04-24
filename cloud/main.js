@@ -109,48 +109,6 @@ app.get("/callback", function(req, res) {
                         }
                 }); 
 
-    //     if (code !== undefined) {
-          
-    //         // Setup params and URL used to call API to obtain an access_token
-    //         var params = {
-    //             code: code,
-    //             client_id: CLIENT_ID,
-    //             client_secret: CLIENT_SECRET,
-    //             redirect_uri: callbackURL,
-    //             grant_type: "authorization_code"
-    //         };
-    //         var url = "https://accounts.google.com/o/oauth2/token";
-            
-    //         // Send the API request
-    //         request.post(url, {form: params}, function(err, resp, body) {
-              
-    //             // Handle any errors that may occur
-    //             if (err) return console.error("Error occured: ", err);
-    //             var results = JSON.parse(body);
-    //             if (results.error) return console.error("Error returned from Google: ", results.error);
-                
-    //             // Retrieve and store access_token to session
-    //             access_token = results.access_token;
-    //             token_type = results.token_type;
-    //             expires = results.expires_in;
-                
-    //             console.log("Connected to Google");
-                
-    //             // Close the popup. This will trigger the client (index.html) to redirect
-    //             // to '/user' which will test out the access_token.
-    //             var output = '<html><head></head><body onload="window.close();">Close this window</body></html>';
-    //             res.writeHead(200, {'Content-Type': 'text/html'});
-    //             res.end(output);
-    //         });
-
-
-    //     } else {
-    //         console.log("Code is undefined: " + code);
-    //         console.log("Error: " + error);
-    //     }
-    // } else {
-    //     console.log('Mismatch with variable "state". Redirecting to /');
-    //     res.redirect("/");
     }
 });
 
