@@ -167,6 +167,7 @@ var getGoogleAccessToken = function(code) {
     });
 }
 
+//TODO: verify headers are correct, verify that query parameter is being passed right, pass in access token somewhere
 var getGoogleDriveFiles = function(query) {
     var body = qs.stringify({
         q: query
