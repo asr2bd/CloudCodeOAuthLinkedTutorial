@@ -45,13 +45,12 @@ app.get("/login", function(req, res) {
         client_id: CLIENT_ID,
         redirect_uri: callbackURL,
         state: state,
-        display: "popup",
         scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive"
     };
     
     params = qs.stringify(params);
-    res.writeHead(200, {'Content-Type': 'text/plain'});
-    res.end("https://accounts.google.com/o/oauth2/auth?" + params);
+    //res.writeHead(200, {'Content-Type': 'text/plain'});
+    res.send("https://accounts.google.com/o/oauth2/auth?" + params);
 });
 
 // The route that Google will redirect the popup to once the user has authed.
@@ -137,6 +136,9 @@ app.get("/user", function(req, res) {
 });
 
 
-
+/**
+ * Attach the express app to Cloud Code to process the inbound request.
+ */
+app.listen();
 
 
