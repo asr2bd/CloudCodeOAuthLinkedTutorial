@@ -167,3 +167,20 @@ var getGoogleAccessToken = function(code) {
     });
 }
 
+var getGoogleDriveFiles = function(query) {
+    var body = qs.stringify({
+        q: query
+    });
+
+    var url = "https://www.googleapis.com/drive/v2/files";
+
+    return Parse.Cloud.httpRequest({
+        method: 'GET',
+        headers: {
+            'Host': 'accounts.google.com',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body,
+        url: url
+    });
+}
