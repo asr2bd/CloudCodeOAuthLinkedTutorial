@@ -121,7 +121,7 @@ app.get("/callback", function(req, res) {
     return obj.destroy();
     }).then(function() {
     // Validate & Exchange the code parameter for an access token from GitHub
-    return getGitHubAccessToken(data.code);
+    return getGoogleAccessToken(data.code);
     }).then(function(access) {
 
         console.log("***got access token*****");
