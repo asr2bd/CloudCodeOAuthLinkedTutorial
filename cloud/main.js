@@ -40,6 +40,8 @@ app.get("/login", function(req, res) {
     // was performed during the OAuth flow
     state = Math.floor(Math.random() * 1e18);
     
+    console.log("****initial state setting******"); 
+    console.log(state); 
     var params = {
         response_type: "code",
         client_id: CLIENT_ID,
