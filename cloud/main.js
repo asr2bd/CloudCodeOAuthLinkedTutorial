@@ -98,11 +98,11 @@ app.get("/callback", function(req, res) {
         // Destroy the TokenRequest before continuing.
         return obj.destroy();
     }).then(function() {
-        // Validate & Exchange the code parameter for an access token from GitHub
+        // Validate & Exchange the code parameter for an access token from Google
         return getGoogleAccessToken(data.code);
-    }).then(function(access) {
+    }).then(function(accessToken) {
         console.log("***got access token*****");
-        console.log(access.data); 
+        console.log(accessToken.data);
     }, function(error) {
         if (error && error.code && error.error) {
           error = error.code + ' ' + error.error;
