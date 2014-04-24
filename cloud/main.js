@@ -20,13 +20,8 @@ app.use(express.bodyParser());    // Middleware for reading request body
 
 // Define API credentials callback URL
 var callbackURL = "https://clarkoauth.parseapp.com/callback";
-var CLIENT_ID = '450953848085-2muj2092fsqtllf2il1lj8uqmjq41j0c.apps.googleusercontent.com'
-var CLIENT_SECRET = 'OvPlHWuOerIiEvlLTkSX4zVm';
-
-var state = '';
-var access_token = '';
-var token_type = '';
-var expires = '';
+var CLIENT_ID = '1024175819480-9qrjco6pflj35tk2ut634ce8fdsrskcm.apps.googleusercontent.com'
+var CLIENT_SECRET = 'ibHt6MbFo8LvtuGSrrKVHopt';
 
 /**
  * In the Data Browser, set the Class Permissions for these 2 classes to
@@ -45,6 +40,9 @@ var restrictedAcl = new Parse.ACL();
 restrictedAcl.setPublicReadAccess(false);
 restrictedAcl.setPublicWriteAccess(false);
 
+app.get("/", function(req, res) {
+    res.redirect("/login");
+});
 
 // Start the OAuth flow by generating a URL that the client (index.html) opens 
 // as a popup. The URL takes the user to Google's site for authentication
@@ -58,7 +56,7 @@ app.get("/login", function(req, res) {
             client_id: CLIENT_ID,
             redirect_uri: callbackURL,
             state: obj.id,
-            scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive"
+            scope: "https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.profile.emails.read https://www.googleapis.com/auth/drive"
         };
             
         params = qs.stringify(params);
@@ -77,7 +75,7 @@ app.get("/callback", function(req, res) {
   
     // Collect the data contained in the querystring
     var data = req.query;
-    var error = req.query.error;
+    var token;
   
     // Verify the 'state' variable generated during '/login' was passed back
     if (!(data && data.code && data.state)) {
@@ -100,9 +98,24 @@ app.get("/callback", function(req, res) {
     }).then(function() {
         // Validate & Exchange the code parameter for an access token from Google
         return getGoogleAccessToken(data.code);
-    }).then(function(accessToken) {
-        console.log("***got access token*****");
-        console.log(accessToken.data);
+    }).then(function(access) {
+        
+        var googleData = access.data;
+        console.log(googleData);
+        if (googleData && googleData.access_token && googleData.token_type) {
+            token = googleData.access_token;
+            return getGoogleUserDetails(token);
+        } 
+        else {
+            return Parse.Promise.error("Invalid access request.");
+        }
+
+    }).then(function(userData) {
+        console.log("------------USER DATA-------------");
+
+        console.log(userData);
+
+
     }, function(error) {
         if (error && error.code && error.error) {
           error = error.code + ' ' + error.error;
@@ -165,6 +178,17 @@ var getGoogleAccessToken = function(code) {
         body: body,
         url: url
     });
+}
+
+var getGoogleUserDetails = function(accessToken) {
+  return Parse.Cloud.httpRequest({
+    method: 'GET',
+    url: "https://www.googleapis.com/plus/v1/people/me",
+    params: { access_token: accessToken },
+    headers: {
+      'User-Agent': 'Parse.com Cloud Code'
+    }
+  });
 }
 
 //TODO: verify headers are correct, verify that query parameter is being passed right, pass in access token somewhere
