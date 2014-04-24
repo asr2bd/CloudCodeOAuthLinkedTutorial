@@ -63,6 +63,10 @@ app.get("/callback", function(req, res) {
       , error = req.query.error;
   
     // Verify the 'state' variable generated during '/login' equals what was passed back
+
+    console.log("***** this is the state **** " + state);
+    console.log("***** this is the cb_state **** " + cb_state);
+
     if (state == cb_state) {
         Parse.Cloud.httpRequest({
                 method: 'POST',
