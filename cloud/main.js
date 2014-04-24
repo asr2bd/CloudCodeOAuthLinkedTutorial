@@ -83,7 +83,7 @@ app.get("/login", function(req, res) {
     params = qs.stringify(params);
     res.writeHead(200, {'Content-Type': 'text/plain'});
     res.redirect("https://accounts.google.com/o/oauth2/auth?" + params);
-        
+
     }, function(error) {
     // If there's an error storing the request, render the error page.
     res.render('error', { errorMessage: 'Failed to save auth request.'});
@@ -96,54 +96,18 @@ app.get("/login", function(req, res) {
 app.get("/callback", function(req, res) {
   
     // Collect the data contained in the querystring
+    var data = req.query; 
     var code = req.query.code
       , cb_state = req.query.state
       , error = req.query.error;
   
     // Verify the 'state' variable generated during '/login' equals what was passed back
-
-    console.log("***** this is the state **** " + state);
-    console.log("***** this is the cb_state **** " + cb_state);
+    if (!(data && data.code && data.state)) {
+        res.send('Invalid auth response received.');
+        return;
+    }
 
     if (state == cb_state) {
-        Parse.Cloud.httpRequest({
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: { 
-                    'code': code,
-                    'client_id': CLIENT_ID,
-                    'client_secret': CLIENT_SECRET,
-                    'redirect_uri': callbackURL,
-                    'grant_type': "authorization_code"
-                },
-            url: url,
-                success: function(httpResponse) {
-                    var results = JSON.parse(httpResponse);
-                    console.log(httpResponse.text);
-                    if (results.error) { 
-                    
-                        return console.error("Error returned from Google: ", results.error);
-
-                    }
-
-                    else {
-
-                        access_token = results.access_token;
-                        token_type = results.token_type;
-                        expires = results.expires_in;
-                        console.log("Connected to Google");
-
-
-                    }
-
-
-                },
-                error: function(httpResponse) {
-                    console.error("Error returned from Google: ", httpResponse.error);
-                        }
-                }); 
 
     }
 });
@@ -182,4 +146,58 @@ app.get("/user", function(req, res) {
  */
 app.listen();
 
+
+var getGoogleAccessToken = function(code) {
+  var body = querystring.stringify({
+        code: code,
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        redirect_uri: callbackURL,
+        grant_type: "authorization_code"
+  });
+  return Parse.Cloud.httpRequest({
+    method: 'POST',
+    url: githubValidateEndpoint,
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'Parse.com Cloud Code'
+    },
+    body: body
+  });
+  return Parse.Cloud.httpRequest({
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body,
+            url: url
+        });
+
+            // success: function(httpResponse) {
+            //     var results = JSON.parse(httpResponse);
+            //     console.log(httpResponse.text);
+            //     if (results.error) { 
+                
+            //         return console.error("Error returned from Google: ", results.error);
+
+            //     }
+
+            //     else {
+
+            //         access_token = results.access_token;
+            //         token_type = results.token_type;
+            //         expires = results.expires_in;
+            //         return console.log("Connected to Google");
+
+
+            //     }
+
+
+            // },
+            // error: function(httpResponse) {
+            //     console.error("Error returned from Google: ", httpResponse.error);
+            //         }
+            // }); 
+
+}
 
