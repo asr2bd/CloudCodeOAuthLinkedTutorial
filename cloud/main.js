@@ -107,9 +107,39 @@ app.get("/callback", function(req, res) {
         return;
     }
 
-    if (state == cb_state) {
+    var query = new Parse.Query(TokenRequest);
+    /**
+    * Check if the provided state object exists as a TokenRequest
+    * Use the master key as operations on TokenRequest are protected
+    */
+    Parse.Cloud.useMasterKey();
 
+    Parse.Promise.as().then(function() {
+    return query.get(data.state);
+    }).then(function(obj) {
+    // Destroy the TokenRequest before continuing.
+    return obj.destroy();
+    }).then(function() {
+    // Validate & Exchange the code parameter for an access token from GitHub
+    return getGitHubAccessToken(data.code);
+    }).then(function(access) {
+
+        console.log("***got access token*****");
+        console.log(access.data); 
+
+    }, function(error) {
+    /**
+     * If the error is an object error (e.g. from a Parse function) convert it
+     *   to a string for display to the user.
+     */
+    if (error && error.code && error.error) {
+      error = error.code + ' ' + error.error;
     }
+    res.send(JSON.stringify(error));
+    
+    });
+
+
 });
 
 // Test out the access_token by making an API call
