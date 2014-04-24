@@ -188,6 +188,7 @@ var getGoogleAccessToken = function(code) {
   return Parse.Cloud.httpRequest({
             method: 'POST',
             headers: {
+                'Host': 'accounts.google.com',
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: body,
