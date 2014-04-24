@@ -49,8 +49,8 @@ app.get("/login", function(req, res) {
     };
     
     params = qs.stringify(params);
-    //res.writeHead(200, {'Content-Type': 'text/plain'});
-    res.send("https://accounts.google.com/o/oauth2/auth?" + params);
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    res.end("https://accounts.google.com/o/oauth2/auth?" + params);
 });
 
 // The route that Google will redirect the popup to once the user has authed.
