@@ -6,6 +6,9 @@ var qs = require('querystring');
 var _ = require('underscore');
 var Buffer = require('buffer').Buffer;
 
+var parseExpressHttpsRedirect = require('parse-express-https-redirect');
+var parseExpressCookieSession = require('parse-express-cookie-session');
+
 /**
  * Create an express application instance
  */
@@ -17,6 +20,9 @@ var app = express();
 app.set('views', 'cloud/views');  // Specify the folder to find templates
 app.set('view engine', 'ejs');    // Set the template engine
 app.use(express.bodyParser());    // Middleware for reading request body
+
+app.use(express.cookieParser('my_super_secret_key'));
+app.use(parseExpressCookieSession({ cookie: { maxAge: 3600 } })); //1 hour
 
 // Define API credentials callback URL
 var callbackURL = "https://clarkauth.parseapp.com/callback";
@@ -107,18 +113,18 @@ app.get("/callback", function(req, res) {
         else {
             return Parse.Promise.error("Invalid access request.");
         }
-
     }).then(function(userDataResponse) {
         var userData = userDataResponse.data;
         if (userData && userData.email && userData.id) {
-            return upsertGitHubUser(token, userData);
+            return upsertGoogleUser(token, userData);
         } 
         else {
             return Parse.Promise.error("Unable to parse Google data.");
         }
     }).then(function(user) {
-        
-
+        return Parse.User.become(user.getSessionToken());
+    }).then(function(user) {
+        res.send(user);
     }, function(error) {
         if (error && error.code && error.error) {
           error = error.code + ' ' + error.error;
@@ -241,7 +247,7 @@ var upsertGoogleUser = function(accessToken, googleData) {
 
         var user = tokenData.get('user');
         return user.fetch({ useMasterKey: true }).then(function(user) {
-            if (accessToken !== token.get('accessToken')) {
+            if (accessToken !== tokenData.get('accessToken')) {
                 tokenData.set('accessToken', accessToken);
             }
 
@@ -279,10 +285,10 @@ var newGoogleUser = function(accessToken, googleData) {
 }
 
 var getGoogleDriveFiles = function(accessToken, query) {
+    var url = "https://www.googleapis.com/drive/v2/files";
+
     var authorization = "Bearer";
     authorization = authorization + ' ' + accessToken; 
-
-    var url = "https://www.googleapis.com/drive/v2/files";
     
     return Parse.Cloud.httpRequest({
         method: 'GET',
