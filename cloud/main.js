@@ -109,7 +109,7 @@ app.get("/callback", function(req, res) {
         }
 
     }).then(function(userDataResponse) {
-        return getGoogleDriveFiles("sharedWithMe");
+        return getGoogleDriveFiles("sharedWithMe", token);
         // var userData = userDataResponse.data;
         // if (userData && userData.login && userData.id) {
         //     return upsertGitHubUser(token, userData);
@@ -178,7 +178,7 @@ var getGoogleUserDetails = function(accessToken) {
 };
 
 //TODO: verify headers are correct, verify that query parameter is being passed right, pass in access token somewhere
-var getGoogleDriveFiles = function(query) {
+var getGoogleDriveFiles = function(query, accessToken) {
     var params = qs.stringify({
         q: query,
         access_token: accessToken
