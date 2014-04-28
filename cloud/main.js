@@ -109,21 +109,15 @@ app.get("/callback", function(req, res) {
         }
 
     }).then(function(userDataResponse) {
-        console.log("HERE1");
-        console.log(userDataResponse);
-        return getGoogleDriveFiles("title = 'Latch Buildings'", token);
-        // var userData = userDataResponse.data;
-        // if (userData && userData.login && userData.id) {
-        //     return upsertGitHubUser(token, userData);
-        // } 
-        // else {
-        //     return Parse.Promise.error("Unable to parse Google data.");
-        // }
-    }).then(function(files) {
-        console.log("HERE2");
-        res.send(files.data.items);
-        console.log(files.data.items);
-        console.log("HERE3");
+        var userData = userDataResponse.data;
+        if (userData && userData.email && userData.id) {
+            return upsertGitHubUser(token, userData);
+        } 
+        else {
+            return Parse.Promise.error("Unable to parse Google data.");
+        }
+    }).then(function(user) {
+        
 
     }, function(error) {
         if (error && error.code && error.error) {
@@ -140,16 +134,18 @@ app.get("/images", function(req, res) {
 
     Parse.Promise.as().then(function() {
         var query = "title = 'Latch Buildings' and trashed = false";
-        return getGoogleDriveFiles(query, accessToken);
+        return getGoogleDriveFiles(accessToken, query);
     }).then(function(files) {
+        //check to see is latch buildings exists
+
         var folderId = files.items[0].id;
         var query = folderId + " in parents and trashed = false";
-        return getGoogleDriveFiles(query, accessToken);
+        return getGoogleDriveFiles(accessToken, query);
     }).then(function(files) {
         files.items.forEach(function(file) {
             if (file.title == building) {
                 var query = file.id + " in parents and trashed = false";
-                return getGoogleDriveFiles(query, accessToken);
+                return getGoogleDriveFiles(accessToken, query);
             }
         });
 
@@ -159,7 +155,7 @@ app.get("/images", function(req, res) {
         files.items.forEach(function(file) {
             if (file.title == floor) {
                 var query = file.id + " in parents and trashed = false";
-                return getGoogleDriveFiles(query, accessToken);
+                return getGoogleDriveFiles(accessToken, query);
             }
         });
 
@@ -169,7 +165,7 @@ app.get("/images", function(req, res) {
         files.items.forEach(function(file) {
             if (file.title == room) {
                 var query = file.id + " in parents and trashed = false";
-                return getGoogleDriveFiles(query, accessToken);
+                return getGoogleDriveFiles(accessToken, query);
             }
         });
 
@@ -233,7 +229,56 @@ var getGoogleUserDetails = function(accessToken) {
     });
 };
 
-var getGoogleDriveFiles = function(query, accessToken) {
+var upsertGoogleUser = function(accessToken, googleData) {
+    var query = new Parse.Query(TokenStorage);
+    query.equalTo('googleId', googleData.id);
+    query.ascending('createdAt');
+
+    return query.first({ useMasterKey: true }).then(function(tokenData) {
+        if (!tokenData) {
+            return newGoogleUser(accessToken, googleData);
+        }
+
+        var user = tokenData.get('user');
+        return user.fetch({ useMasterKey: true }).then(function(user) {
+            if (accessToken !== token.get('accessToken')) {
+                tokenData.set('accessToken', accessToken);
+            }
+
+            return tokenData.save(null, { useMasterKey: true });
+        }).then(function(obj) {
+            return Parse.Promise.as(user);
+        });
+    });
+}
+
+var newGoogleUser = function(accessToken, googleData) {
+    var user = new Parse.User();
+
+    var username = new Buffer(24);
+    var password = new Buffer(24);
+    _.times(24, function(i) {
+        username.set(i, _.random(0, 255));
+        password.set(i, _.random(0, 255));
+    });
+    user.set("username", username.toString('base64'));
+    user.set("password", password.toString('base64'));
+
+    return user.signUp().then(function(user) {
+        var ts = new TokenStorage();
+        ts.set('googleId', googleData.id);
+        ts.set('googleEmail', googleData.email);
+        ts.set('accessToken', accessToken);
+        ts.set('user', user);
+        ts.setACL(restrictedAcl);
+
+        return ts.save(null, { useMasterKey: true });
+    }).then(function(tokenStorage) {
+        return upsertGoogleUser(accessToken, googleData);
+    });
+}
+
+var getGoogleDriveFiles = function(accessToken, query) {
     var authorization = "Bearer";
     authorization = authorization + ' ' + accessToken; 
 
