@@ -20,8 +20,8 @@ app.use(express.bodyParser());    // Middleware for reading request body
 
 // Define API credentials callback URL
 var callbackURL = "https://clarkoauth.parseapp.com/callback";
-var CLIENT_ID = '450953848085-2muj2092fsqtllf2il1lj8uqmjq41j0c.apps.googleusercontent.com'
-var CLIENT_SECRET = 'OvPlHWuOerIiEvlLTkSX4zVm';
+var CLIENT_ID = '141607548124-po4hd97cvh8t16ska4biobrmrjuaaqvv.apps.googleusercontent.com';
+var CLIENT_SECRET = '2QP1HwxHA6QttHqR-rk3MQGq';
 
 /**
  * In the Data Browser, set the Class Permissions for these 2 classes to
@@ -56,7 +56,7 @@ app.get("/login", function(req, res) {
             client_id: CLIENT_ID,
             redirect_uri: callbackURL,
             state: obj.id,
-            scope: "https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.profile.emails.read https://www.googleapis.com/auth/drive"
+            scope: "https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.profile.emails.read https://www.googleapis.com/auth/plus.me https://www.googleapis.com/auth/drive"
         };
             
         params = qs.stringify(params);
@@ -99,12 +99,11 @@ app.get("/callback", function(req, res) {
         // Validate & Exchange the code parameter for an access token from Google
         return getGoogleAccessToken(data.code);
     }).then(function(access) {
-        
         var googleData = access.data;
-        console.log(googleData);
         if (googleData && googleData.access_token && googleData.token_type) {
             token = googleData.access_token;
             return getGoogleUserDetails(token);
+            //return getGoogleDriveFiles("sharedWithMe");
         } 
         else {
             return Parse.Promise.error("Invalid access request.");
@@ -167,6 +166,7 @@ var getGoogleAccessToken = function(code) {
         redirect_uri: callbackURL,
         grant_type: "authorization_code"
     });
+
     var url = "https://accounts.google.com/o/oauth2/token";
 
     return Parse.Cloud.httpRequest({
@@ -178,18 +178,22 @@ var getGoogleAccessToken = function(code) {
         body: body,
         url: url
     });
-}
+};
 
 var getGoogleUserDetails = function(accessToken) {
-  return Parse.Cloud.httpRequest({
-    method: 'GET',
-    url: "https://www.googleapis.com/plus/v1/people/me",
-    params: { access_token: accessToken },
-    headers: {
-      'User-Agent': 'Parse.com Cloud Code'
-    }
-  });
-}
+    var url = "https://www.googleapis.com/oauth2/v2/userinfo";
+
+    return Parse.Cloud.httpRequest({
+        method: 'GET',
+        url: url,
+        params: { 
+            access_token: accessToken
+        },
+        headers: {
+            'User-Agent': 'Parse.com Cloud Code'
+        }
+    });
+};
 
 //TODO: verify headers are correct, verify that query parameter is being passed right, pass in access token somewhere
 var getGoogleDriveFiles = function(query) {
@@ -202,10 +206,9 @@ var getGoogleDriveFiles = function(query) {
     return Parse.Cloud.httpRequest({
         method: 'GET',
         headers: {
-            'Host': 'accounts.google.com',
             'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: body,
         url: url
     });
-}
+};
