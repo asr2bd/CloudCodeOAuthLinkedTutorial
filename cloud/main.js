@@ -56,7 +56,7 @@ app.get("/login", function(req, res) {
             client_id: CLIENT_ID,
             redirect_uri: callbackURL,
             state: obj.id,
-            scope: "https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/drive"
+            scope: "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email"
         };
             
         params = qs.stringify(params);
@@ -109,6 +109,8 @@ app.get("/callback", function(req, res) {
         }
 
     }).then(function(userDataResponse) {
+        console.log("HERE1");
+        console.log(userDataResponse);
         return getGoogleDriveFiles("sharedWithMe", token);
         // var userData = userDataResponse.data;
         // if (userData && userData.login && userData.id) {
@@ -118,7 +120,7 @@ app.get("/callback", function(req, res) {
         //     return Parse.Promise.error("Unable to parse Google data.");
         // }
     }).then(function(files) {
-        console.log("HERE");
+        console.log("HERE2");
         console.log(files);
 
     }, function(error) {
@@ -158,12 +160,7 @@ var getGoogleAccessToken = function(code) {
 };
 
 var getGoogleUserDetails = function(accessToken) {
-
-    console.log("in the function");
-
-    //var url = "https://www.googleapis.com/oauth2/v2/userinfo";
     var url = "https://www.googleapis.com/userinfo/v2/me";
-    //var url = "https://www.googleapis.com/drive/v2/files";
 
     return Parse.Cloud.httpRequest({
         method: 'GET',
@@ -177,7 +174,6 @@ var getGoogleUserDetails = function(accessToken) {
     });
 };
 
-//TODO: verify headers are correct, verify that query parameter is being passed right, pass in access token somewhere
 var getGoogleDriveFiles = function(query, accessToken) {
     var params = qs.stringify({
         q: query,
