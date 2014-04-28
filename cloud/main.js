@@ -56,7 +56,7 @@ app.get("/login", function(req, res) {
             client_id: CLIENT_ID,
             redirect_uri: callbackURL,
             state: obj.id,
-            scope: "https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.profile.emails.read https://www.googleapis.com/auth/plus.me https://www.googleapis.com/auth/drive"
+            scope: "https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/drive"
         };
             
         params = qs.stringify(params);
@@ -103,17 +103,23 @@ app.get("/callback", function(req, res) {
         if (googleData && googleData.access_token && googleData.token_type) {
             token = googleData.access_token;
             return getGoogleUserDetails(token);
-            //return getGoogleDriveFiles("sharedWithMe");
         } 
         else {
             return Parse.Promise.error("Invalid access request.");
         }
 
-    }).then(function(userData) {
-        console.log("------------USER DATA-------------");
-
-        console.log(userData);
-
+    }).then(function(userDataResponse) {
+        return getGoogleDriveFiles("sharedWithMe");
+        // var userData = userDataResponse.data;
+        // if (userData && userData.login && userData.id) {
+        //     return upsertGitHubUser(token, userData);
+        // } 
+        // else {
+        //     return Parse.Promise.error("Unable to parse Google data.");
+        // }
+    }).then(function(files) {
+        console.log("HERE");
+        console.log(files);
 
     }, function(error) {
         if (error && error.code && error.error) {
@@ -122,35 +128,6 @@ app.get("/callback", function(req, res) {
         res.send(JSON.stringify(error));
     });
 });
-
-// Test out the access_token by making an API call
-app.get("/user", function(req, res) {
-  
-    // Check to see if user as an access_token first
-    if (access_token) {
-      
-        // URL endpoint and params needed to make the API call  
-        var url = "https://www.googleapis.com/oauth2/v1/userinfo";
-        var params = {
-            access_token: access_token
-        };
-
-        // Send the request
-        request.get({url: url, qs: params}, function(err, resp, user) {
-            // Check for errors
-            if (err) return console.error("Error occured: ", err);
-            
-            // Send output as response
-            var output = "<h1>Your User Details</h1><pre>" + user + "</pre>";
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end(output);
-        });
-    } else {
-        console.log("Couldn't verify user was authenticated. Redirecting to /");
-        res.redirect("/");
-    }
-});
-
 
 /**
  * Attach the express app to Cloud Code to process the inbound request.
@@ -181,7 +158,12 @@ var getGoogleAccessToken = function(code) {
 };
 
 var getGoogleUserDetails = function(accessToken) {
-    var url = "https://www.googleapis.com/oauth2/v2/userinfo";
+
+    console.log("in the function");
+
+    //var url = "https://www.googleapis.com/oauth2/v2/userinfo";
+    var url = "https://www.googleapis.com/userinfo/v2/me";
+    //var url = "https://www.googleapis.com/drive/v2/files";
 
     return Parse.Cloud.httpRequest({
         method: 'GET',
@@ -197,18 +179,19 @@ var getGoogleUserDetails = function(accessToken) {
 
 //TODO: verify headers are correct, verify that query parameter is being passed right, pass in access token somewhere
 var getGoogleDriveFiles = function(query) {
-    var body = qs.stringify({
-        q: query
+    var params = qs.stringify({
+        q: query,
+        access_token: accessToken
     });
 
     var url = "https://www.googleapis.com/drive/v2/files";
-
+    
     return Parse.Cloud.httpRequest({
         method: 'GET',
+        url: url,
+        params: params,
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: body,
-        url: url
+            'User-Agent': 'Parse.com Cloud Code'
+        }
     });
 };
