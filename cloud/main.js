@@ -177,9 +177,11 @@ var getGoogleUserDetails = function(accessToken) {
 
 var getGoogleDriveFiles = function(query, accessToken) {
     var params = qs.stringify({
-        q: query,
-        access_token: accessToken
+        q: query
     });
+
+    var authorization = "Bearer";
+    authorization = authorization + ' ' + accessToken; 
 
     var url = "https://www.googleapis.com/drive/v2/files";
     
@@ -188,7 +190,8 @@ var getGoogleDriveFiles = function(query, accessToken) {
         url: url,
         params: params,
         headers: {
-            'User-Agent': 'Parse.com Cloud Code'
+            'User-Agent': 'Parse.com Cloud Code',
+            'Authorization': authorization
         }
     });
 };
