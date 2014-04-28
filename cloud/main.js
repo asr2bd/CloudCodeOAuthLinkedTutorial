@@ -162,14 +162,15 @@ var getGoogleAccessToken = function(code) {
 var getGoogleUserDetails = function(accessToken) {
     var url = "https://www.googleapis.com/userinfo/v2/me";
 
+    var authorization = "Bearer";
+    authorization = authorization + ' ' + accessToken; 
+
     return Parse.Cloud.httpRequest({
         method: 'GET',
         url: url,
-        params: { 
-            access_token: accessToken
-        },
         headers: {
-            'User-Agent': 'Parse.com Cloud Code'
+            'User-Agent': 'Parse.com Cloud Code',
+            'Authorization': authorization
         }
     });
 };
