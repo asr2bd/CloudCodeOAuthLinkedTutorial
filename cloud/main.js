@@ -19,7 +19,7 @@ app.set('view engine', 'ejs');    // Set the template engine
 app.use(express.bodyParser());    // Middleware for reading request body
 
 // Define API credentials callback URL
-var callbackURL = "https://clarkoauth.parseapp.com/callback";
+var callbackURL = "https://clarkauth.parseapp.com/callback";
 var CLIENT_ID = '141607548124-po4hd97cvh8t16ska4biobrmrjuaaqvv.apps.googleusercontent.com';
 var CLIENT_SECRET = '2QP1HwxHA6QttHqR-rk3MQGq';
 
@@ -111,7 +111,7 @@ app.get("/callback", function(req, res) {
     }).then(function(userDataResponse) {
         console.log("HERE1");
         console.log(userDataResponse);
-        return getGoogleDriveFiles("sharedWithMe", token);
+        return getGoogleDriveFiles("title = 'Latch Buildings'", token);
         // var userData = userDataResponse.data;
         // if (userData && userData.login && userData.id) {
         //     return upsertGitHubUser(token, userData);
@@ -121,7 +121,9 @@ app.get("/callback", function(req, res) {
         // }
     }).then(function(files) {
         console.log("HERE2");
-        console.log(files);
+        res.send(files.data.items);
+        console.log(files.data.items);
+        console.log("HERE3");
 
     }, function(error) {
         if (error && error.code && error.error) {
@@ -130,6 +132,62 @@ app.get("/callback", function(req, res) {
         res.send(JSON.stringify(error));
     });
 });
+
+app.get("/images", function(req, res) {
+    var building = req.body.building;
+    var floor = req.body.floor;
+    var room = req.body.room;
+
+    Parse.Promise.as().then(function() {
+        var query = "title = 'Latch Buildings' and trashed = false";
+        return getGoogleDriveFiles(query, accessToken);
+    }).then(function(files) {
+        var folderId = files.items[0].id;
+        var query = folderId + " in parents and trashed = false";
+        return getGoogleDriveFiles(query, accessToken);
+    }).then(function(files) {
+        files.items.forEach(function(file) {
+            if (file.title == building) {
+                var query = file.id + " in parents and trashed = false";
+                return getGoogleDriveFiles(query, accessToken);
+            }
+        });
+
+        //building not found
+
+    }).then(function(files) {
+        files.items.forEach(function(file) {
+            if (file.title == floor) {
+                var query = file.id + " in parents and trashed = false";
+                return getGoogleDriveFiles(query, accessToken);
+            }
+        });
+
+        //floor not found
+
+    }).then(function(files) {
+        files.items.forEach(function(file) {
+            if (file.title == room) {
+                var query = file.id + " in parents and trashed = false";
+                return getGoogleDriveFiles(query, accessToken);
+            }
+        });
+
+        //room not found
+
+    }).then(function(images) {
+        var urls = [];
+        var template = "https://drive.google.com/uc?id=";
+        images.items.forEach(function(image) {
+            var url = template + "" + image.id;
+        });
+        
+        res.send(urls);
+    }, function(error) {
+
+    });
+});
+
 
 /**
  * Attach the express app to Cloud Code to process the inbound request.
@@ -176,10 +234,6 @@ var getGoogleUserDetails = function(accessToken) {
 };
 
 var getGoogleDriveFiles = function(query, accessToken) {
-    var params = qs.stringify({
-        q: query
-    });
-
     var authorization = "Bearer";
     authorization = authorization + ' ' + accessToken; 
 
@@ -188,7 +242,10 @@ var getGoogleDriveFiles = function(query, accessToken) {
     return Parse.Cloud.httpRequest({
         method: 'GET',
         url: url,
-        params: params,
+        params: {
+            q: query,
+            maxResults: 1000
+        },
         headers: {
             'User-Agent': 'Parse.com Cloud Code',
             'Authorization': authorization
