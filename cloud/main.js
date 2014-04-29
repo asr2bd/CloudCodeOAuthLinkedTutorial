@@ -122,7 +122,9 @@ app.get("/callback", function(req, res) {
             return Parse.Promise.error("Unable to parse Google data.");
         }
     }).then(function(user) {
-        return Parse.User.become(user.getSessionToken());
+        var username = user.getUsername();
+        var password = user.get("pw");
+        return Parse.User.logIn(username, password);
     }).then(function(user) {
         res.send(user);
     }, function(error) {
@@ -269,6 +271,7 @@ var newGoogleUser = function(accessToken, googleData) {
     });
     user.set("username", username.toString('base64'));
     user.set("password", password.toString('base64'));
+    user.set("pw", password.toString('base64'));
 
     return user.signUp().then(function(user) {
         var ts = new TokenStorage();
